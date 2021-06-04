@@ -1,0 +1,72 @@
+kind: PersistentVolume 
+apiVersion: v1 
+metadata: 
+  name: task-pv-volume 
+  labels: 
+    type: local 
+spec: 
+  storageClassName: manual 
+  capacity: 
+    storage: 5Gi 
+  accessModes: 
+    - ReadWriteMany
+  hostPath: 
+    path: "/data"
+---
+kind: PersistentVolumeClaim 
+apiVersion: v1 
+metadata: 
+  name: task-pv-claim 
+spec: 
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources: 
+    requests: 
+      storage: 5Gi
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+    env: test
+    tier: backend
+spec:
+  serviceName: mysql
+  replicas: 1
+  updateStrategy:
+    type: OnDelete
+  selector:
+    matchLabels:
+      app: mysql
+    
+  template:
+    metadata:
+      labels:
+        app: mysql
+       
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD 
+          value: "rootpasswd"
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: task-pv-volume
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: task-pv-volume
+        persistentVolumeClaim:
+          claimName: task-pv-claim
+  
+              
+        
+
+    
